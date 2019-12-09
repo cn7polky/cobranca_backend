@@ -3,6 +3,7 @@ header("Access-Control-Allow-Origin: *");
 
 class Routes {
     public static $companyControll = '../controllers/companyController.php';
+    public static $clientControll = '../controllers/clientController.php';
     public static $contractControll = '../controllers/contractController.php';
     public static $ownerControll = '../controllers/ownerController.php';
     public static $parcelControll = '../controllers/parcelController.php';

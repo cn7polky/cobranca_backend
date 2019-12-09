@@ -8,20 +8,20 @@ include_once Routes::$planControll;
 
 class Contract
 {
-    public static function openContract($company, $plan, $installments, $user)
+    public static function openContract($clientId, $plan, $installments, $user)
     {
         $pdo = Conexao::getInstance();
-        $stmt = $pdo->prepare("INSERT INTO cad_contracts (cad_companies_company_id, cad_plans_plan_id, cad_users_user_id) VALUES (:company, :plan, :user)");
+        $stmt = $pdo->prepare("INSERT INTO cad_contracts (cad_clients_client_id, cad_plans_plan_id, cad_users_user_id) VALUES (:client, :plan, :user)");
         $stmt->execute(array(
-            ':company' => $company,
+            ':client' => $clientId,
             ':plan' => $plan,
             ':user' => $user
         ));
 
         if ($stmt->rowCount() > 0) {
-            $id_contract = Contract::getContractId($company);
+            $id_contract = Contract::getContractId($clientId); // id do cliente
             foreach ($installments as $key => $value) {
-                if (Parcel::addParcel($value[0], $value[2], $value[1], $id_contract, $company) == 'Sucesso') {
+                if (Parcel::addParcel($value[0], $value[2], $value[1], $id_contract, $clientId) == 'Sucesso') {
                     $msg = array('msg' => 'Contrato aberto com Sucesso');
                 } else {
                     $msg = array('msg' => 'Falha ao abrir contrato ou gerar parcelas');
@@ -33,17 +33,17 @@ class Contract
         echo json_encode($msg);
     }
 
-    public static function getContractId($company)
+    public static function getContractId($clientId) // id do cliente
     {
         $pdo = Conexao::getInstance();
-        $query = "SELECT contract_id FROM cad_contracts WHERE cad_companies_company_id = '$company'";
+        $query = "SELECT contract_id FROM cad_contracts WHERE cad_clients_client_id = '$clientId'";
         $execute = $pdo->query($query);
         foreach ($execute as $key => $value) {
             return $value['contract_id'];
         }
     }
 
-    public static function getContractInfo($id = '', $date = '', $installments = '', $company = '', $return = false)
+    public static function getContractInfo($id = '', $date = '', $installments = '', $client = '', $return = false)
     {
         $pdo = Conexao::getInstance();
         if ($id != '' && $date == '') {
@@ -58,15 +58,15 @@ class Contract
         $info = [];
         foreach ($execute as $key => $value) {
             $dateOpen = explode(' ', $value['contract_dateopen']);
-            if ($company == 'true') {
+            if ($client == 'true') {
                 array_push($info, array(
-                    'company' => Company::listCompanyName($value['cad_companies_company_id'], 'true'),
+                    'client' => Client::listClientName($value['cad_clients_client_id'], 'true'),
                 ));
             } else if ($installments == '') {
                 array_push($info, array(
                     'id' => $value['contract_id'],
                     'status' => $value['contract_status'],
-                    'company' => Company::listCompanyName($value['cad_companies_company_id'], 'true'),
+                    'client' => Client::listClientName($value['cad_clients_client_id'], 'true'),
                     'dateOpen' => $dateOpen[0],
                     'plan' => Plan::listPlan($value['cad_plans_plan_id'], 'true'),
                     'installments' => json_decode(Parcel::getParcelId('', $value['contract_id']))
@@ -76,7 +76,7 @@ class Contract
                     'id' => $value['contract_id'],
                     'status' => $value['contract_status'],
                     'dateOpen' => $dateOpen[0],
-                    'company' => Company::listCompanyName($value['cad_companies_company_id'], 'true'),
+                    'client' => Client::listClientName($value['cad_clients_client_id'], 'true'),
                     'plan' => Plan::listPlan($value['cad_plans_plan_id'], 'true'),
                 ));
             }
@@ -126,7 +126,7 @@ class Contract
 
 if (isset($_POST['confirm'])) {
     $installments = json_decode($_POST['parcelas']);
-    Contract::openContract($_POST['company-id'], $_POST['plan-id'], $installments, $_POST['user-id']);
+    Contract::openContract($_POST['client-id'], $_POST['plan-id'], $installments, $_POST['user-id']);
 } else if (isset($_POST['get-contracts'])) {
     Contract::getContractInfo('', $_POST['date'], 'não');
 } else if (isset($_POST['get-contract'])) {
